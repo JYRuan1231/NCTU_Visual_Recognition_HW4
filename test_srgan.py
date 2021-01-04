@@ -18,8 +18,7 @@ import matplotlib.pyplot as plt
 import cv2
 from torchvision import transforms 
 import skimage.measure
-from  RFDN import make_model
-from smsr import SMSR
+from model_srgan import Generator, Discriminator
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -38,8 +37,7 @@ NUM_EPOCHS = opt.num_epochs
 
 test_path = './data/testing_lr_images/'
 allFileList = os.listdir(test_path)
-model = SMSR()
-print(model)
+model = Generator(UPSCALE_FACTOR)
 model.load_state_dict(torch.load('./saved_models/'+'generator.pth'))
 
 for file in allFileList:
