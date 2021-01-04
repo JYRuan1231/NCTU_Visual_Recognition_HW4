@@ -71,7 +71,7 @@ Default:
 | ------------|:-------------:|
 |model_name             |      generator.pth       |
 
-When the program was finished, we will get a json file in /result/.
+When the program was finished, we will get 14 high-resolution images file in /images/.
 ```
 ./images/00.png
 ./images/01.png
