@@ -19,26 +19,18 @@ import cv2
 from torchvision import transforms 
 import skimage.measure
 from model_srgan import Generator, Discriminator
-
+import config as cfg
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class Opt:
-    def __init__(self, crop_size=78, num_epochs=50, upscale_factor=3):
-        self.crop_size = crop_size
-        self.num_epochs = num_epochs
-        self.upscale_factor = upscale_factor
 
-opt = Opt()
 
-CROP_SIZE = opt.crop_size
-UPSCALE_FACTOR = opt.upscale_factor
-NUM_EPOCHS = opt.num_epochs
+UPSCALE_FACTOR = cfg.upscale_factor
 
 
 test_path = './data/testing_lr_images/'
 allFileList = os.listdir(test_path)
 model = Generator(UPSCALE_FACTOR)
-model.load_state_dict(torch.load('./saved_models/'+'generator.pth'))
+model.load_state_dict(torch.load('./saved_models/'+cfg.model_name))
 
 for file in allFileList:
     if os.path.isfile(test_path + file):

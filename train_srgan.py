@@ -21,16 +21,14 @@ from torchvision.transforms import ToTensor, ToPILImage
 import matplotlib.pyplot as plt
 import cv2
 import math
+import config as cfg
 
 
 def quantize(img, rgb_range):
     pixel_range = 255 / rgb_range
     return img.mul(pixel_range).clamp(0, 255).round().div(pixel_range)
 
-
 def calc_psnr(sr, hr, scale, rgb_range, benchmark=False):
-    # print(sr.size())
-    # print(hr.size())
     diff = (sr - hr).data.div(rgb_range)
     if benchmark:
         shave = scale
@@ -53,24 +51,17 @@ def calc_psnr(sr, hr, scale, rgb_range, benchmark=False):
 
 
 
-class Opt:
-    def __init__(self, crop_size=48, num_epochs=30000, upscale_factor=3):
-        self.crop_size = crop_size
-        self.num_epochs = num_epochs
-        self.upscale_factor = upscale_factor
-
-
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    opt = Opt()
-    CROP_SIZE = opt.crop_size
-    UPSCALE_FACTOR = opt.upscale_factor
-    NUM_EPOCHS = opt.num_epochs
+
+    CROP_SIZE = cfg.crop_size
+    UPSCALE_FACTOR = cfg.upscale_factor
+    NUM_EPOCHS = cfg.num_epochs
 
     train_set = TrainDatasetFromFolder('data/training_hr_images', crop_size=CROP_SIZE, upscale_factor=UPSCALE_FACTOR)
     val_set = ValDatasetFromFolder('data/validation', upscale_factor=UPSCALE_FACTOR)
-    train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=16, shuffle=True)
-    val_loader = DataLoader(dataset=val_set, num_workers=1, batch_size=1, shuffle=False)
+    train_loader = DataLoader(dataset=train_set, num_workers=cfg.workers, batch_size=cfg.batch_size, shuffle=True)
+    val_loader = DataLoader(dataset=val_set, num_workers=cfg.workers, batch_size=1, shuffle=False)
 
     netG = Generator(UPSCALE_FACTOR)
     print('# generator parameters:', sum(param.numel() for param in netG.parameters()))
@@ -84,11 +75,11 @@ if __name__ == "__main__":
         netD.cuda()
         generator_criterion.cuda()
 
-    optimizerG = optim.Adam(netG.parameters(), lr=5e-4, betas=(0.5, 0.999))
-    schedulerG = lr_scheduler.CosineAnnealingWarmRestarts(optimizerG, T_0=5000, T_mult=2, eta_min=5e-5)
+    optimizerG = optim.Adam(netG.parameters(), lr=cfg.adam_lr, betas=(cfg.beta1, 0.999))
+    schedulerG = lr_scheduler.CosineAnnealingWarmRestarts(optimizerG, T_0=cfg.T_0, T_mult=cfg.T_mult, eta_min=cfg.adam_eta_min)
 
     optimizerD = optim.SGD(netD.parameters(), lr=1e-4)
-    schedulerD = lr_scheduler.CosineAnnealingWarmRestarts(optimizerD, T_0=5000, T_mult=2, eta_min=1e-5)
+    schedulerD = lr_scheduler.CosineAnnealingWarmRestarts(optimizerD, T_0=cfg.T_0, T_mult=cfg.T_mult, eta_min=cfg.sgd_eta_min_eta_min)
 
     results = {'d_loss': [], 'g_loss': [], 'd_score': [], 'g_score': [], 'psnr': [], 'ssim': []}
 
@@ -166,9 +157,6 @@ if __name__ == "__main__":
                     lr = lr.cuda()
                     hr = hr.cuda()
 
-                if hr.shape[2] / lr.shape[2] != 3 or hr.shape[3] / lr.shape[3] != 3:
-                    print(hr.shape, lr.shape)
-
                 sr = netG(lr)
 
                 batch_mse = ((sr - hr) ** 2).data.mean()
@@ -186,7 +174,7 @@ if __name__ == "__main__":
                 if best_psnr < valing_results['psnr2']:
                     best_psnr = valing_results['psnr2']
                     # Save model checkpoints
-                    torch.save(netG.state_dict(), "saved_models/generator.pth")
+                    torch.save(netG.state_dict(), "saved_models/"+cfg.model_name)
                     print('save best psnr success!')
 
                 valing_results['ssim'] = valing_results['ssims'] / valing_results['batch_sizes']
