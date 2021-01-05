@@ -39,8 +39,11 @@ And, these is related to your training performance.
 |adam_lr             |  5e-4             |
 |beta1(for adam)             |  0.5             |
 |sgd_lr           |  1e-4           |
-|  The following are for CosineAnnealingWarmRestar|
-|T_0             |  5000            |
+The following are for CosineAnnealingWarmRestar
+
+| Argument    | Default value |
+| ------------|:-------------:|
+|T_0           |  5000      |
 |T_mult             |  2            |
 |sgd_eta_min             |  1e-5           |
 |adam_eta_min             |  5e-5           |
