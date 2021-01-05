@@ -11,6 +11,30 @@ Before training data, Upload the training images to `/data/training_hr_images/` 
 
 Make sure split some training data to `/data/validation/` as validation dataset.
 
+### Directory Structure
+```
+project
+│   README.md
+│   config.py
+|   data_utils.py
+|   loss_srgan.py
+│   model_srgan.py
+|   test_srgan.py
+|   train_srgan.py
+│
+└───pytorch_ssim
+│   │   __init__.py
+│   
+└───images
+|   |   00.png
+└───data
+|    │───training_hr_images
+|    │───testing_lr_images
+|    │───validation
+└───saved_models
+```
+
+
 ### Traning Model
 
 Example:
