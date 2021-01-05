@@ -28,6 +28,7 @@ def quantize(img, rgb_range):
     pixel_range = 255 / rgb_range
     return img.mul(pixel_range).clamp(0, 255).round().div(pixel_range)
 
+
 def calc_psnr(sr, hr, scale, rgb_range, benchmark=False):
     diff = (sr - hr).data.div(rgb_range)
     if benchmark:
@@ -43,6 +44,7 @@ def calc_psnr(sr, hr, scale, rgb_range, benchmark=False):
         shave = scale + 6
     # shave = int(shave)
     import math
+
     shave = math.ceil(shave)
     valid = diff[:, :, shave:-shave, shave:-shave]
     mse = valid.pow(2).mean()
@@ -50,23 +52,41 @@ def calc_psnr(sr, hr, scale, rgb_range, benchmark=False):
     return -10 * math.log10(mse)
 
 
-
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     CROP_SIZE = cfg.crop_size
     UPSCALE_FACTOR = cfg.upscale_factor
-    NUM_EPOCHS = cfg.num_epochs
+    NUM_EPOCHS = cfg.epochs
 
-    train_set = TrainDatasetFromFolder('data/training_hr_images', crop_size=CROP_SIZE, upscale_factor=UPSCALE_FACTOR)
-    val_set = ValDatasetFromFolder('data/validation', upscale_factor=UPSCALE_FACTOR)
-    train_loader = DataLoader(dataset=train_set, num_workers=cfg.workers, batch_size=cfg.batch_size, shuffle=True)
-    val_loader = DataLoader(dataset=val_set, num_workers=cfg.workers, batch_size=1, shuffle=False)
+    train_set = TrainDatasetFromFolder(
+        "data/training_hr_images",
+        crop_size=CROP_SIZE,
+        upscale_factor=UPSCALE_FACTOR,
+    )
+    val_set = ValDatasetFromFolder(
+        "data/validation", upscale_factor=UPSCALE_FACTOR
+    )
+    train_loader = DataLoader(
+        dataset=train_set,
+        num_workers=cfg.workers,
+        batch_size=cfg.batch_size,
+        shuffle=True,
+    )
+    val_loader = DataLoader(
+        dataset=val_set, num_workers=cfg.workers, batch_size=1, shuffle=False
+    )
 
     netG = Generator(UPSCALE_FACTOR)
-    print('# generator parameters:', sum(param.numel() for param in netG.parameters()))
+    print(
+        "# generator parameters:",
+        sum(param.numel() for param in netG.parameters()),
+    )
     netD = Discriminator()
-    print('# discriminator parameters:', sum(param.numel() for param in netD.parameters()))
+    print(
+        "# discriminator parameters:",
+        sum(param.numel() for param in netD.parameters()),
+    )
 
     generator_criterion = GeneratorLoss()
 
@@ -75,19 +95,38 @@ if __name__ == "__main__":
         netD.cuda()
         generator_criterion.cuda()
 
-    optimizerG = optim.Adam(netG.parameters(), lr=cfg.adam_lr, betas=(cfg.beta1, 0.999))
-    schedulerG = lr_scheduler.CosineAnnealingWarmRestarts(optimizerG, T_0=cfg.T_0, T_mult=cfg.T_mult, eta_min=cfg.adam_eta_min)
+    optimizerG = optim.Adam(
+        netG.parameters(), lr=cfg.adam_lr, betas=(cfg.beta1, 0.999)
+    )
+    schedulerG = lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizerG, T_0=cfg.T_0, T_mult=cfg.T_mult, eta_min=cfg.adam_eta_min
+    )
 
     optimizerD = optim.SGD(netD.parameters(), lr=1e-4)
-    schedulerD = lr_scheduler.CosineAnnealingWarmRestarts(optimizerD, T_0=cfg.T_0, T_mult=cfg.T_mult, eta_min=cfg.sgd_eta_min_eta_min)
+    schedulerD = lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizerD, T_0=cfg.T_0, T_mult=cfg.T_mult, eta_min=cfg.sgd_eta_min
+    )
 
-    results = {'d_loss': [], 'g_loss': [], 'd_score': [], 'g_score': [], 'psnr': [], 'ssim': []}
+    results = {
+        "d_loss": [],
+        "g_loss": [],
+        "d_score": [],
+        "g_score": [],
+        "psnr": [],
+        "ssim": [],
+    }
 
     best_psnr = 0.0
     best_ssim = 0.0
     for epoch in range(1, NUM_EPOCHS + 1):
         train_bar = tqdm(train_loader)
-        running_results = {'batch_sizes': 0, 'd_loss': 0, 'g_loss': 0, 'd_score': 0, 'g_score': 0}
+        running_results = {
+            "batch_sizes": 0,
+            "d_loss": 0,
+            "g_loss": 0,
+            "d_score": 0,
+            "g_score": 0,
+        }
         since = time.time()
         total_lossD = 0.0
         total_lossG = 0.0
@@ -97,7 +136,7 @@ if __name__ == "__main__":
         for data, target in train_bar:
             g_update_first = True
             batch_size = data.size(0)
-            running_results['batch_sizes'] += batch_size
+            running_results["batch_sizes"] += batch_size
 
             ############################
             # (1) Update D network: maximize D(x)-1-D(G(z))
@@ -123,7 +162,9 @@ if __name__ == "__main__":
             ###########################
             optimizerG.zero_grad()
 
-            g_loss = generator_criterion(netD(fake_img).mean(), netG(z), real_img)
+            g_loss = generator_criterion(
+                netD(fake_img).mean(), netG(z), real_img
+            )
             g_loss.backward()
 
             fake_img = netG(z)
@@ -131,25 +172,39 @@ if __name__ == "__main__":
 
             optimizerG.step()
             # loss for current batch before optimization
-            running_results['g_loss'] += g_loss.item() * batch_size
-            running_results['d_loss'] += d_loss.item() * batch_size
-            running_results['d_score'] += real_out.item() * batch_size
-            running_results['g_score'] += fake_out.item() * batch_size
+            running_results["g_loss"] += g_loss.item() * batch_size
+            running_results["d_loss"] += d_loss.item() * batch_size
+            running_results["d_score"] += real_out.item() * batch_size
+            running_results["g_score"] += fake_out.item() * batch_size
 
-            train_bar.set_description(desc='[%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f' % (
-                epoch, NUM_EPOCHS, running_results['d_loss'] / running_results['batch_sizes'],
-                running_results['g_loss'] / running_results['batch_sizes'],
-                running_results['d_score'] / running_results['batch_sizes'],
-                running_results['g_score'] / running_results['batch_sizes']))
+            train_bar.set_description(
+                desc="[%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f"
+                % (
+                    epoch,
+                    NUM_EPOCHS,
+                    running_results["d_loss"] / running_results["batch_sizes"],
+                    running_results["g_loss"] / running_results["batch_sizes"],
+                    running_results["d_score"]
+                    / running_results["batch_sizes"],
+                    running_results["g_score"]
+                    / running_results["batch_sizes"],
+                )
+            )
 
         netG.eval()
         with torch.no_grad():
             val_bar = tqdm(val_loader)
-            valing_results = {'mse': 0, 'ssims': 0, 'psnr2': 0, 'ssim': 0, 'batch_sizes': 0}
+            valing_results = {
+                "mse": 0,
+                "ssims": 0,
+                "psnr2": 0,
+                "ssim": 0,
+                "batch_sizes": 0,
+            }
 
             for iter, (val_lr, val_hr) in enumerate(val_bar):
                 batch_size = val_lr.size(0)
-                valing_results['batch_sizes'] += batch_size
+                valing_results["batch_sizes"] += batch_size
 
                 lr = val_lr
                 hr = val_hr
@@ -160,31 +215,38 @@ if __name__ == "__main__":
                 sr = netG(lr)
 
                 batch_mse = ((sr - hr) ** 2).data.mean()
-                valing_results['mse'] += batch_mse * batch_size
+                valing_results["mse"] += batch_mse * batch_size
                 batch_ssim = pytorch_ssim.ssim(sr, hr).item()
-                valing_results['ssims'] += batch_ssim * batch_size
+                valing_results["ssims"] += batch_ssim * batch_size
 
                 max_num = 1.0
                 sr = quantize(sr, max_num)
                 hr = quantize(hr, max_num)
 
-                valing_results['psnr2'] += calc_psnr(sr, hr, 3, max_num) / 14
+                valing_results["psnr2"] += calc_psnr(sr, hr, 3, max_num) / 14
 
-
-                if best_psnr < valing_results['psnr2']:
-                    best_psnr = valing_results['psnr2']
+                if best_psnr < valing_results["psnr2"]:
+                    best_psnr = valing_results["psnr2"]
                     # Save model checkpoints
-                    torch.save(netG.state_dict(), "saved_models/"+cfg.model_name)
-                    print('save best psnr success!')
+                    torch.save(
+                        netG.state_dict(), "saved_models/" + cfg.model_name
+                    )
+                    print("save best psnr success!")
 
-                valing_results['ssim'] = valing_results['ssims'] / valing_results['batch_sizes']
+                valing_results["ssim"] = (
+                    valing_results["ssims"] / valing_results["batch_sizes"]
+                )
 
                 val_bar.set_description(
-                    desc='[converting LR images to SR images] PSNR2: %.4f dB SSIM: %.4f' % (
-                     valing_results['psnr2'], valing_results['ssim']))
+                    desc="[converting LR images to SR images] PSNR2: %.4f dB SSIM: %.4f"
+                    % (valing_results["psnr2"], valing_results["ssim"])
+                )
 
         schedulerD.step()
         schedulerG.step()
         time_elapsed = time.time() - since
-        print('Complete one epoch in {:.0f}m {:.0f}s'.format(
-            time_elapsed // 60, time_elapsed % 60))
+        print(
+            "Complete one epoch in {:.0f}m {:.0f}s".format(
+                time_elapsed // 60, time_elapsed % 60
+            )
+        )

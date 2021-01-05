@@ -19,7 +19,7 @@ epochs = 30000
 adam_lr = 5e-4
 sgd_lr = 1e-4
 
-beta1 = 0.5 # for adam
+beta1 = 0.5  # for adam
 
 T_0 = 5000
 T_mult = 2
@@ -30,4 +30,3 @@ adam_eta_min = 5e-5
 # Testing Config
 ##################################################
 model_name = "generator.pth"
-
