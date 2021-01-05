@@ -63,6 +63,7 @@ And, these is related to your training performance.
 |adam_lr             |  5e-4             |
 |beta1(for adam)             |  0.5             |
 |sgd_lr           |  1e-4           |
+
 The following are for CosineAnnealingWarmRestar
 
 | Argument    | Default value |
