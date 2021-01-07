@@ -82,7 +82,7 @@ When the program was finished, we will get a traning model file in `/saved_model
 ### Testing Model
 
 If we want to test image, make sure we have a model in `/saved_models/` and confirm `model_name`.
-In addition, if you want to use my trained model, download this [model](https://drive.google.com/file/d/18-UqHy4TOCS2HLfPm4bUhtrBat-x-qD9/view?usp=sharing) to `/saved_models/` and change the "model_name" to `srgan_v1.pth` in `config.py`
+In addition, if you want to use my trained model, download this [model](https://drive.google.com/file/d/13AseVckLJ8WBJow1bm5bQBW-X1QSVLY-/view?usp=sharing) to `/saved_models/` and change the "model_name" to `srgan_v1.pth` in `config.py`
 
 Example:
 
